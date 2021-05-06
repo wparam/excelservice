@@ -1,0 +1,3 @@
+service
+position/positionDecisionAnalysis?collectiveId=720&activityDateId=10759&isJmr=1&reportPeriod=1y&benchmark=FTSE%20All%20World&field=exposure
+securities/securityFactorModelFactorList?permissionId=1&modelId=30&securityId=40905&sedol=BH4HKS3
