@@ -6,6 +6,8 @@ const fs = require('fs')
 const excludes = [];
 const appStart = new Date();
 
+const ReqTimeout = 1000 * 60 * 10;
+
 const loadExclude = () => {
   return new Promise((resolve, reject)=>{
     fs.createReadStream('./files/exclude.csv')
@@ -15,14 +17,6 @@ const loadExclude = () => {
         resolve({
           exc: excludes
         });
-        // [
-        //   {
-        //     service: 'position/positionDecisionAnalysis?collectiveId=720&activityDateId=10759&isJmr=1&reportPeriod=1y&benchmark=FTSE%20All%20World&field=exposure'
-        //   },
-        //   {
-        //     service: 'securities/securityFactorModelFactorList?permissionId=1&modelId=30&securityId=40905&sedol=BH4HKS3'
-        //   }
-        // ]
       })
       .on('error', ()=>{
         reject({
@@ -36,9 +30,9 @@ const sendRequest = (url, msg) => {
   return new Promise((resolve, reject) => {
     let start = new Date();
     console.log(`Sending request for ${url}`);
-    return http.get(url, res => {
+    let req = http.get(url, res => {
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        console.log(`${msg}, statusCode: ${res.statusCode}, and took ${Math.round((new Date() - start) / 1000 * 10) / 10} secs`);
+        console.log(`${new Date().toLocaleTimeString()}: ${msg}, statusCode: ${res.statusCode}, and took ${Math.round((new Date() - start) / 1000 * 10) / 10} secs`);
       } else {
         console.log(`Not 200: ${res.statusCode}`);
       }
@@ -47,12 +41,23 @@ const sendRequest = (url, msg) => {
         spend: Math.round((new Date() - start) / 1000 * 10) / 10
       })
     }).on("error", (err) => {
-      console.log("Error: " + err.message);
+      console.log(`${new Date().toLocaleTimeString()}: ${msg}, Error: ${err.message}`);
       reject({
-        statusCode: 500,
+        statusCode: 404,
         spend: Math.round((new Date() - start) / 1000 * 10) / 10
       });
     });
+
+    req.setTimeout(ReqTimeout, ()=>{
+      console.log(`${new Date().toLocaleTimeString()}: ${msg}, Timeout`);
+      req.abort();
+      reject({
+        statusCode: 504,
+        spend: Math.round((new Date() - start) / 1000 * 10) / 10
+      });
+    })
+
+    return req;
   });
 }
 
